@@ -5,7 +5,10 @@
   "use strict";
 
   var FACE_MATCH_THRESHOLD = 0.5; // menor = mais rigoroso. 0.5–0.6 é o padrão do face-api.js
-  var FACE_MODELS_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+  // O pacote npm do face-api.js não inclui os pesos do modelo — eles só
+  // existem no repositório do GitHub do projeto, por isso usamos o modo
+  // "/gh/" do jsdelivr (serve arquivos direto de um repositório GitHub).
+  var FACE_MODELS_URL = "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights";
 
   var statusEl = document.getElementById("lock-status");
   var passwordForm = document.getElementById("password-form");
@@ -71,13 +74,13 @@
   }
 
   async function loadReferenceDescriptors() {
-    var manifestRes = await fetch("faces/manifest.json", { cache: "no-store" });
+    var manifestRes = await fetch("manifest.json", { cache: "no-store" });
     if (!manifestRes.ok) return [];
     var filenames = await manifestRes.json();
     var descriptors = [];
     for (var i = 0; i < filenames.length; i++) {
       try {
-        var img = await faceapi.fetchImage("faces/" + encodeURIComponent(filenames[i]));
+        var img = await faceapi.fetchImage(encodeURIComponent(filenames[i]));
         var detection = await faceapi
           .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks()
@@ -102,7 +105,7 @@
         referenceDescriptors = await loadReferenceDescriptors();
       }
       if (referenceDescriptors.length === 0) {
-        setStatus("Nenhuma foto de referência cadastrada em faces/. Veja faces/README.md.", "error");
+        setStatus("Nenhuma foto de referência cadastrada. Veja o README.", "error");
         faceBtn.disabled = false;
         return;
       }

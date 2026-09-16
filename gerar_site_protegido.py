@@ -22,7 +22,7 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 
 DEFAULT_INPUT = Path(__file__).parent.parent / "resultado_expandido" / "jornal_omni.html"
-OUTPUT_JS = Path(__file__).parent / "js" / "content.enc.js"
+OUTPUT_JS = Path(__file__).parent / "content.enc.js"
 
 
 def evp_bytes_to_key(password: bytes, salt: bytes, key_len=32, iv_len=16):
@@ -44,6 +44,15 @@ def cryptojs_encrypt(plaintext: str, password: str) -> str:
     return base64.b64encode(b"Salted__" + salt + ciphertext).decode("ascii")
 
 
+def as_js_multiline_string(value: str, chunk_size: int = 200) -> str:
+    """Quebra um texto grande em várias linhas curtas (array de pedaços unidos
+    em tempo de execução), em vez de uma única linha gigante — algumas
+    ferramentas (inclusive o upload do GitHub) travam com linhas enormes."""
+    chunks = [value[i:i + chunk_size] for i in range(0, len(value), chunk_size)]
+    body = ",\n  ".join(repr(chunk) for chunk in chunks)
+    return f"[\n  {body}\n].join('')"
+
+
 def build(input_path: Path, password: str) -> None:
     html = input_path.read_text(encoding="utf-8")
     encrypted = cryptojs_encrypt(html, password)
@@ -61,7 +70,8 @@ def build(input_path: Path, password: str) -> None:
     OUTPUT_JS.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_JS.write_text(
         "// Gerado por gerar_site_protegido.py — não editar à mão.\n"
-        f"const ENCRYPTED_CONTENT = {encrypted!r};\n"
+        "// Quebrado em várias linhas curtas de propósito (ver as_js_multiline_string).\n"
+        f"const ENCRYPTED_CONTENT = {as_js_multiline_string(encrypted)};\n"
         f"const FACE_UNLOCK_SECRET_B64 = {face_secret_b64!r};\n",
         encoding="utf-8",
     )

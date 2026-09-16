@@ -1,0 +1,2 @@
+# PlanejamentoComercial
+jornal-omni
